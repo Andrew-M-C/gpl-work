@@ -1,0 +1,75 @@
+--- rt2860v2/ap/ap.c	2013-04-26 19:19:28.000000000 +0800
++++ rt2860v2/ap/ap.c	2014-03-10 10:21:43.454258298 +0800
+@@ -797,6 +797,18 @@
+ 
+ 
+ 
++#ifdef ED_MONITOR
++{
++	BOOLEAN bEdcca = FALSE;
++
++	bEdcca = GetEDCCASupport(pAd);
++
++	if (bEdcca)
++	{
++		ed_monitor_init(pAd);
++	}
++}
++#endif /* ED_MONITOR */
+ 
+ 	DBGPRINT(RT_DEBUG_TRACE, ("<=== APStartUp\n"));
+ }
+@@ -817,6 +829,14 @@
+ 	
+ 	DBGPRINT(RT_DEBUG_TRACE, ("!!! APStop !!!\n"));
+ 
++#ifdef ED_MONITOR
++	if (pAd->ed_chk)
++	{
++		DBGPRINT(RT_DEBUG_ERROR, ("@@@ %s: go to ed_monitor_exit()!!\n", __FUNCTION__));		
++		ed_monitor_exit(pAd);
++	}
++#endif /* ED_MONITOR */
++
+ #ifdef DFS_SUPPORT
+ 	NewRadarDetectionStop(pAd);
+ #endif /* DFS_SUPPORT */
+@@ -958,6 +978,10 @@
+ #endif /* defined(PRE_ANT_SWITCH) || defined(CFO_TRACK) */
+ 	UINT32 MaxWcidNum = MAX_LEN_OF_MAC_TABLE;
+ 
++#ifdef ED_MONITOR
++	INT total_sta = 0;
++#endif
++
+ 	for (bss_index = BSS0; bss_index < MAX_MBSSID_NUM(pAd); bss_index++)
+ 		fAnyStationPortSecured[bss_index] = 0;
+ 
+@@ -1417,12 +1441,27 @@
+ 	/* Update the state of port per MBSS */
+ 	for (bss_index = BSS0; bss_index < MAX_MBSSID_NUM(pAd); bss_index++)
+ 	{
++#ifdef ED_MONITOR
++		total_sta += pAd->ApCfg.MBSSID[bss_index].StaCount;
++#endif
+ 		if (fAnyStationPortSecured[bss_index] > 0)
+ 			pAd->ApCfg.MBSSID[bss_index].PortSecured = WPA_802_1X_PORT_SECURED;
+ 		else
+ 			pAd->ApCfg.MBSSID[bss_index].PortSecured = WPA_802_1X_PORT_NOT_SECURED;
+ 	}
+ 
++#ifdef ED_MONITOR
++	if (total_sta > pAd->ed_sta_threshold)
++	{
++		/* Predict this is not test edcca case*/
++		if (pAd->ed_chk)
++		{
++			DBGPRINT(RT_DEBUG_ERROR, ("@@@ %s: go to ed_monitor_exit()!!\n", __FUNCTION__));		
++			ed_monitor_exit(pAd);
++		}
++	}
++#endif
++
+ #ifdef DOT11_N_SUPPORT
+ #ifdef DOT11N_DRAFT3
+ 	if (pAd->CommonCfg.Bss2040CoexistFlag & BSS_2040_COEXIST_INFO_NOTIFY)

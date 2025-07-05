@@ -1,0 +1,105 @@
+--- rt2860v2/chips/rt6352.c	2013-04-26 21:26:13.000000000 +0800
++++ rt2860v2/chips/rt6352.c	2014-03-10 21:32:43.354294684 +0800
+@@ -1726,6 +1726,69 @@
+ 	RTMPusecDelay(1000);
+ }
+ 
++
++#ifdef ED_MONITOR
++INT RT6352_set_ed_cca(RTMP_ADAPTER *pAd, BOOLEAN enable)
++{
++	UINT32 mac_val;
++	UCHAR bbp_val;
++
++	if (enable)
++	{
++		RTMP_IO_READ32(pAd, CH_TIME_CFG, &mac_val);
++		mac_val &= (~0x01);
++		RTMP_IO_WRITE32(pAd, CH_TIME_CFG, mac_val);
++
++		RTMP_IO_READ32(pAd, CH_IDLE_STA, &mac_val);
++		RTMP_IO_READ32(pAd, CH_BUSY_STA, &mac_val);
++		RTMP_IO_READ32(pAd, CH_BUSY_STA_SEC, &mac_val);
++		RTMP_IO_READ32(pAd, 0x1140, &mac_val);
++
++		RTMP_IO_READ32(pAd, CH_TIME_CFG, &mac_val);
++		mac_val |= 0x05; // enable channel status check
++		RTMP_IO_WRITE32(pAd, CH_TIME_CFG, mac_val);
++
++		// enable bbp for ED_CCA status check
++		bbp_val = 0x0B; // bit 0~7 for high threshold
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R61, bbp_val);
++
++		RTMP_BBP_IO_READ8_BY_REG_ID(pAd, BBP_R87, &bbp_val);
++		bbp_val |= 0x84; // bit 0~2 for low threshold, bit 7 for enable ED_CCA
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R87, bbp_val);
++		
++		// enable bbp for ED_2nd_CCA status check
++		RTMP_BBP_IO_READ8_BY_REG_ID(pAd, BBP_R83, &bbp_val);
++		bbp_val = 0x9a; // bit 0~3 for threshold
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R83, bbp_val);
++
++		RTMP_BBP_IO_READ8_BY_REG_ID(pAd, BBP_R65, &bbp_val);
++		bbp_val &= (~0x02); // bit 1 for eanble/disable ED_2nd_CCA, 0: enable, 1: disable 
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R65, bbp_val);
++
++		RTMP_IO_READ32(pAd, TXOP_CTRL_CFG, &mac_val);
++		mac_val |= ((1<<20) | (1<<7));
++		RTMP_IO_WRITE32(pAd, TXOP_CTRL_CFG, mac_val);		
++	}
++	else
++	{
++		RTMP_BBP_IO_READ8_BY_REG_ID(pAd, BBP_R87, &bbp_val);
++		bbp_val &= (~0x80); // bit 7 for enable/disable ED_CCA
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R87, bbp_val);
++		RTMP_BBP_IO_READ8_BY_REG_ID(pAd, BBP_R65, &bbp_val);
++		bbp_val |= (0x02); // bit 1 for eanble/disable ED_2nd_CCA, 0: enable, 1: disable 
++		RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R65, bbp_val);
++		RTMP_IO_READ32(pAd, TXOP_CTRL_CFG, &mac_val);
++		mac_val &= (~((1<<20) | (1<<7)));
++		RTMP_IO_WRITE32(pAd, TXOP_CTRL_CFG, mac_val);
++	}
++	
++	return 0;
++}
++#endif /* ED_MONITOR */
++
++
++
++
+ static VOID RT6352_RTMPSetAGCInitValue(
+ 	IN PRTMP_ADAPTER pAd,
+ 	IN UCHAR BandWidth)
+@@ -4538,7 +4601,6 @@
+ }
+ #endif /* RTMP_TEMPERATURE_COMPENSATION */
+ 
+-
+ VOID RT6352_AsicAdjustTxPower(
+ 	IN PRTMP_ADAPTER pAd)
+ {
+@@ -4611,7 +4673,11 @@
+ #ifdef RTMP_INTERNAL_TX_ALC
+ 		if (pAd->TxPowerCtrl.bInternalTxALC == TRUE)
+ 		{
+-			if (pAd->bCalibrationDone)
++			if ((pAd->bCalibrationDone)
++#ifdef ED_MONITOR
++				&& (pAd->ed_tx_stoped == FALSE)
++#endif /* ED_MONITOR */
++			)
+ 			{
+ 				if (RT635xTriggerTssiCompensation(pAd, TotalDeltaPower))
+ 				{
+@@ -5451,6 +5517,11 @@
+ 	pChipOps->ChipBBPAdjust = RT6352_ChipBBPAdjust;
+ 	pChipOps->AsicAntennaDefaultReset = RT6352_AsicAntennaDefaultReset;
+ 	pChipOps->ChipSwitchChannel = RT6352_ChipSwitchChannel;
++#ifdef ED_MONITOR
++	pChipOps->ChipSetEDCCA = RT6352_set_ed_cca;
++#else
++	pChipOps->ChipSetEDCCA= NULL;
++#endif /* ED_MONITOR */
+ 	pChipOps->ChipAGCInit = RT6352_RTMPSetAGCInitValue;
+ #ifdef CARRIER_DETECTION_SUPPORT
+ 	pAd->chipCap.carrier_func = TONE_RADAR_V2;

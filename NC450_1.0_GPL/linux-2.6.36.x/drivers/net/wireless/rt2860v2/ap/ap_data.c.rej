@@ -1,0 +1,60 @@
+--- ap/ap_data.c	(revision 16482)
++++ ap/ap_data.c	(working copy)
+@@ -4655,7 +4655,8 @@
+ 
+ #undef	MAX_RX_PROCESS_CNT
+ #define MAX_RX_PROCESS_CNT	(32)
+-
++static int j=0;
++static int k=0;
+ BOOLEAN APRxDoneInterruptHandle(
+ 	IN	PRTMP_ADAPTER	pAd) 
+ {
+@@ -4689,11 +4690,11 @@
+ #endif /* LINUX */
+ 
+ 	RxProcessed = RxPending = 0;
+-
++	int i = 0;
+ 	/* process whole rx ring */
+ 	while (1)
+ 	{
+-
++		i++;
+ 		if (RTMP_TEST_FLAG(pAd, (fRTMP_ADAPTER_RADIO_OFF |
+ 								fRTMP_ADAPTER_RESET_IN_PROGRESS |
+ 									fRTMP_ADAPTER_HALT_IN_PROGRESS)) || 
+@@ -4787,6 +4788,24 @@
+ 		pAd->RalinkCounters.RxCount ++;
+ 		pAd->RalinkCounters.OneSecRxCount ++;
+ 
++		if(pHeader->FC.SubType == SUBTYPE_BEACON && pHeader->Addr2[0] == 0x90 
++			&& pHeader->Addr2[1] == 0xF6 && pHeader->Addr2[2] == 0x52
++			&& pHeader->Addr2[3] == 0x57 && pHeader->Addr2[4] == 0x6B
++			&& pHeader->Addr2[5] == 0x2A)
++		{
++			j++;
++			printk("----baecons: %d----\n",j);
++		}
++
++		
++		if(pHeader->FC.SubType == SUBTYPE_BEACON && pHeader->Addr2[0] == 0x00 
++			&& pHeader->Addr2[1] == 0x0a && pHeader->Addr2[2] == 0xeb
++			&& pHeader->Addr2[3] == 0x70 && pHeader->Addr2[4] == 0x00
++			&& pHeader->Addr2[5] == 0x50)
++		{
++			k++;
++			printk("                        ****baecons: %d----\n",k);
++		}
+ #ifdef RALINK_ATE
+ 		if (ATE_ON(pAd))
+ 		{
+@@ -4942,6 +4961,8 @@
+ 		}
+ 	}
+ 
++	if(i > 6)
++		printk("----Handle Packages:%d----\n",i);
+ #ifdef UAPSD_SUPPORT
+ 	/* dont remove the function or UAPSD will fail */
+ 	UAPSD_MR_SP_RESUME(pAd);

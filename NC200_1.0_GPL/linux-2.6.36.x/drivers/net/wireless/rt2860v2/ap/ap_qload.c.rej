@@ -1,0 +1,41 @@
+--- rt2860v2/ap/ap_qload.c	2013-04-26 19:19:28.000000000 +0800
++++ rt2860v2/ap/ap_qload.c	2014-03-10 10:21:43.474262192 +0800
+@@ -612,7 +612,18 @@
+ 		(pAd->CommonCfg.AddHTInfo.AddHtInfo.RecomWidth != 0))
+ 	{
+ 		/* in 20MHz, no need to check busy time of secondary channel */
+-		RTMP_IO_READ32(pAd, CH_BUSY_STA_SEC, &BusyTime);
++//yiwei is this need ?
++#if 0//def ED_MONITOR
++		if (pAd->ed_chk == TRUE)
++		{
++			DBGPRINT(RT_DEBUG_TRACE, ("%s(): FixMe, unexpected reading of CH_BUSY_STA\n", __FUNCTION__));
++			BusyTime = 0;
++		}
++		else
++#endif /* ED_MONITOR  */
++		{
++			RTMP_IO_READ32(pAd, CH_BUSY_STA_SEC, &BusyTime);
++		}
+ 		pAd->QloadLatestChannelBusyTimeSec = BusyTime;
+ 
+ #ifdef QLOAD_FUNC_BUSY_TIME_STATS
+@@ -644,7 +655,17 @@
+ #endif /* DOT11_N_SUPPORT */
+ 
+ 	/* do busy time statistics for primary channel */
+-	RTMP_IO_READ32(pAd, CH_BUSY_STA, &BusyTime);
++//yiwei is this need?
++#if 0//def ED_MONITOR
++	if (pAd->ed_chk == TRUE)
++	{
++		DBGPRINT(RT_DEBUG_TRACE, ("%s(): FixMe, unexpected reading of CH_BUSY_STA\n", __FUNCTION__));
++	}
++	else
++#endif /* ED_MONITOR  */
++	{
++		RTMP_IO_READ32(pAd, CH_BUSY_STA, &BusyTime);
++	}
+ 	pAd->QloadLatestChannelBusyTimePri = BusyTime;
+ 
+ #ifdef QLOAD_FUNC_BUSY_TIME_STATS

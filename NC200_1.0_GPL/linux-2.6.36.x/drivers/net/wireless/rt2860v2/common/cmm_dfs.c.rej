@@ -1,0 +1,22 @@
+--- rt2860v2/common/cmm_dfs.c	2013-04-26 19:19:29.000000000 +0800
++++ rt2860v2/common/cmm_dfs.c	2014-03-10 10:52:26.614620000 +0800
+@@ -2218,8 +2218,17 @@
+ 	int busy_delta, idle_delta;	
+ 	PRADAR_DETECT_STRUCT pRadarDetect = &pAd->CommonCfg.RadarDetect;
+ 
+-	RTMP_IO_READ32(pAd, CH_IDLE_STA, &pRadarDetect->idle_time);
+-	RTMP_IO_READ32(pAd, CH_BUSY_STA, &pRadarDetect->busy_time);
++#if 0//def ED_MONITOR
++	if (pAd->ed_chk == TRUE)
++	{
++		DBGPRINT(RT_DEBUG_TRACE, ("%s(): FixMe, unexpected reading of CH_IDLE_STA\n", __FUNCTION__));
++	}
++	else
++#endif /* ED_MONITOR  */
++	{
++		RTMP_IO_READ32(pAd, CH_IDLE_STA, &pRadarDetect->idle_time);
++		RTMP_IO_READ32(pAd, CH_BUSY_STA, &pRadarDetect->busy_time);
++	}
+ 
+ 	/*ch_busy_sta_index begining at 0.*/
+ 	busy_delta = pRadarDetect->busy_time - pRadarDetect->ch_busy_sta[pRadarDetect->ch_busy_sta_index];

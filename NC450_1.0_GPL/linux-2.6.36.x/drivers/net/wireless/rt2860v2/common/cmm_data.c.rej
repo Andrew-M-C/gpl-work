@@ -1,0 +1,22 @@
+--- rt2860v2/common/cmm_data.c	2013-04-26 19:19:39.000000000 +0800
++++ rt2860v2/common/cmm_data.c	2014-03-10 10:21:43.474262192 +0800
+@@ -3628,6 +3628,8 @@
+ 			if the DSAP = 0xAA, SSAP=0xAA, Contorl = 0x03, it has a 5-bytes SNAP header.
+ 				=> + SNAP (5, OriginationID(3) + etherType(2))
+ 		*/
++
++		
+ 		if (pSrcBuf[0] == 0xAA && pSrcBuf[1] == 0xAA && pSrcBuf[2] == 0x03)
+ 		{
+ 			Sniff2BytesFromNdisBuffer((PNDIS_BUFFER)pSrcBuf, 6, &Byte0, &Byte1);
+@@ -3647,6 +3649,10 @@
+ #ifdef CONFIG_AP_SUPPORT
+ 		USHORT VLAN_VID = 0;
+ 
++#if 0//yiwei vlan debug!
++hex_dump("7620 RTMPCheckEtherType Pkt(VLAN):", GET_OS_PKT_DATAPTR(pPacket), GET_OS_PKT_LEN(pPacket));
++#endif
++
+ 		/* 0x8100 means VLAN packets */
+ 
+ 		/* Dest. MAC Address (6-bytes) +

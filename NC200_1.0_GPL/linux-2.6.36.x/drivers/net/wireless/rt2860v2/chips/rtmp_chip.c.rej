@@ -1,0 +1,12 @@
+--- rt2860v2/chips/rtmp_chip.c	2013-04-26 19:19:20.000000000 +0800
++++ rt2860v2/chips/rtmp_chip.c	2014-03-10 10:21:43.474262192 +0800
+@@ -604,6 +604,9 @@
+ 	pChipOps->ChipBBPAdjust = ChipBBPAdjust;
+ 	pChipOps->ChipSwitchChannel = ChipSwitchChannel;
+ 
++	/* EDCCA */
++	pChipOps->ChipSetEDCCA= NULL;
++
+ 	/* TX ALC */
+ 	pChipCap->bTempCompTxALC = FALSE;
+ 	pChipOps->AsicGetTxPowerOffset = NULL;
